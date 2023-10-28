@@ -5,11 +5,11 @@
 #include <LiquidCrystal_I2C.h>
 #include <ArduinoJson.h>
 
-RTC_DS3231 rtc;
-char daysOfTheWeek[7][12] = {"Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu"};
-int jam, menit, detik;
-int tanggal, bulan, tahun;
-String hari;
+// RTC_DS3231 rtc;
+// char daysOfTheWeek[7][12] = {"Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu"};
+// int jam, menit, detik;
+// int tanggal, bulan, tahun;
+// String hari;
 float ppm;
 int pm2_5, pm10, AQIco, AQIpm2_5, AQIpm10;
 String str;
@@ -17,28 +17,28 @@ SoftwareSerial ZHSerial(3, 4); // RX, TX
 SoftwareSerial nodemcu(5,6);
 LiquidCrystal_I2C lcd(0x27,16,4);
 SD_ZH03B ZH03B( ZHSerial, SD_ZH03B::SENSOR_ZH03B );  // same as the line above
-const int reedSwitchPin = 8; // Digital pin 13
-volatile int tipCount = 0;    // Counter for tip events
-volatile float conversionFactor = 0.5;
-float rain=0;
-unsigned long lastResetTime = 0; // Variable to store the last reset time
-const unsigned long resetInterval = 86400000; // 1 minute in milliseconds
+// const int reedSwitchPin = 8; // Digital pin 13
+// volatile int tipCount = 0;    // Counter for tip events
+// volatile float conversionFactor = 0.5;
+// float rain=0;
+// unsigned long lastResetTime = 0; // Variable to store the last reset time
+// const unsigned long resetInterval = 86400000; // 1 minute in milliseconds
 
-void reedSwitchISR() {
-  tipCount++; // Increment the tip count when the reed switch is triggered
-  rain = tipCount * conversionFactor;
-     lcd.clear(); 
-  lcd.setCursor(1, 4);    // Set the cursor to the second line
-  lcd.print("CRH_HJN:");   // Display a label
-  lcd.print(rain);
-  Serial.print("CRH_HJN:");   // Display a label
-  Serial.print(rain);  
-  lcd.setCursor(11,4);
-  lcd.print("Tip:");   // Display a label
-  lcd.print(tipCount); 
-  Serial.print("Tip:");   // Display a label
-  Serial.print(tipCount); 
-}
+// void reedSwitchISR() {
+//   tipCount++; // Increment the tip count when the reed switch is triggered
+//   rain = tipCount * conversionFactor;
+//      lcd.clear(); 
+//   lcd.setCursor(1, 4);    // Set the cursor to the second line
+//   lcd.print("CRH_HJN:");   // Display a label
+//   lcd.print(rain);
+//   Serial.print("CRH_HJN:");   // Display a label
+//   Serial.print(rain);  
+//   lcd.setCursor(11,4);
+//   lcd.print("Tip:");   // Display a label
+//   lcd.print(tipCount); 
+//   Serial.print("Tip:");   // Display a label
+//   Serial.print(tipCount); 
+// }
 
 void getdata(){
    if( ZH03B.readData() ) {
@@ -125,7 +125,7 @@ void getdata(){
   doc["b"] = pm10;
   doc["c"] = AQIpm2_5;
   doc["d"] = AQIpm10; 
-  doc["e"] = rain;
+  // doc["e"] = rain;
 
   String jsonString;
   serializeJson(doc, jsonString);
@@ -135,17 +135,17 @@ void getdata(){
 }
 
 void setup() {
-   pinMode(reedSwitchPin, INPUT_PULLUP); // Enable internal pull-up resistor
-attachInterrupt(digitalPinToInterrupt(reedSwitchPin), reedSwitchISR, FALLING); // Attach ISR to the falling edge of the reed switch signal
-  lastResetTime = millis();
-   unsigned long currentTime = millis();
-   if (currentTime - lastResetTime >= resetInterval) {
-     // Reset the tipCount to zero
-     tipCount = 0;
-     rain = 0; 
-        // Update the last reset time
-     lastResetTime = currentTime;
-   }
+//    pinMode(reedSwitchPin, INPUT_PULLUP); // Enable internal pull-up resistor
+// attachInterrupt(digitalPinToInterrupt(reedSwitchPin), reedSwitchISR, FALLING); // Attach ISR to the falling edge of the reed switch signal
+//   lastResetTime = millis();
+//    unsigned long currentTime = millis();
+//    if (currentTime - lastResetTime >= resetInterval) {
+//      // Reset the tipCount to zero
+//      tipCount = 0;
+//      rain = 0; 
+//         // Update the last reset time
+//      lastResetTime = currentTime;
+//    }
     Serial.begin(9600);
     nodemcu.begin(9600);
     delay(1000);
@@ -157,11 +157,11 @@ attachInterrupt(digitalPinToInterrupt(reedSwitchPin), reedSwitchISR, FALLING); /
     Serial.println("-- Reading ZH03B --");
     delay(200);
 	  //Serial.print("sizeof frame(should be 24bytes): "); Serial.println( sizeof(union_t) );
- if (! rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    while (1) delay(10);
-  }
+//  if (! rtc.begin()) {
+//     Serial.println("Couldn't find RTC");
+//     Serial.flush();
+//     while (1) delay(10);
+//   }
     lcd.init();
   lcd.backlight();
   lcd.clear();
@@ -175,17 +175,17 @@ attachInterrupt(digitalPinToInterrupt(reedSwitchPin), reedSwitchISR, FALLING); /
 
 
 void loop () {
-  DateTime now = rtc.now();
-  jam     = now.hour();
-  menit   = now.minute();
-  detik   = now.second();
-  tanggal = now.day();
-  bulan   = now.month();
-  tahun   = now.year();
-  hari    = daysOfTheWeek[now.dayOfTheWeek()];
-  Serial.println(String() + hari + ", " + tanggal + "-" + bulan + "-" + tahun);
-  Serial.println(String() + jam + "." + menit + "-" + tahun);
-  Serial.println();
+  // DateTime now = rtc.now();
+  // jam     = now.hour();
+  // menit   = now.minute();
+  // detik   = now.second();
+  // tanggal = now.day();
+  // bulan   = now.month();
+  // tahun   = now.year();
+  // hari    = daysOfTheWeek[now.dayOfTheWeek()];
+  // Serial.println(String() + hari + ", " + tanggal + "-" + bulan + "-" + tahun);
+  // Serial.println(String() + jam + "." + menit + "-" + tahun);
+  // Serial.println();
   delay(1000);
  getdata();
 //  delay(3000);
