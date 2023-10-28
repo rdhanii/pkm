@@ -5,11 +5,18 @@
 #include <WiFiClientSecureBearSSL.h>
 #include <ArduinoJson.h>
 #include <SoftwareSerial.h>
+#include <RTClib.h>
 SoftwareSerial nodemcu(15,13);
 
 // Replace with your network credentials
-const char* ssid = "BOLT!Super4G-F185";
-const char* password = "796qe1yt";
+const char* ssid ="Taruna Spot"; //"BOLT!Super4G-F185";
+const char* password ="stmkgofficial";// "796qe1yt";
+
+const int reedSwitchPin = D3; // Digital pin 13
+volatile int tipCount24 = 0;    // Counter for tip events
+volatile float conversionFactor = 0.5;
+float rain24=0;
+unsigned long lastResetTime24 = 0; // Variable to store the last reset time
 
 // Initialize Telegram BOT
 #define BOTtoken "6482768636:AAFAfvpcGdP1FF5Di9gDnirkPpPAiSYKoFI"  // your Bot Token (Get from Botfather)
@@ -18,12 +25,11 @@ float pm2_5 = 0;
 float pm10 = 0;
 float AQIpm2_5 = 0;
 float AQIpm10 = 0;
-float rain = 0;
 
 #ifdef ESP8266
   X509List cert(TELEGRAM_CERTIFICATE_ROOT);
 #endif
-
+RTC_DS3231 rtc;
 WiFiClientSecure client;
 UniversalTelegramBot bot(BOTtoken, client);
 const IPAddress server(0,0,0,0);
@@ -35,7 +41,11 @@ unsigned long lastTimeBotRan;
 const int ledPin = 2;
 bool ledState = LOW;
 
+void IRAM_ATTR reedSwitchISR() {
 
+  tipCount24++; // Increment the tip count when the reed switch is triggered
+  rain24 = tipCount24 * conversionFactor; 
+}
 
 void handleNewMessages(int numNewMessages) {
   Serial.println("handleNewMessages");
@@ -47,7 +57,14 @@ void handleNewMessages(int numNewMessages) {
     Serial.println(text);
 
     String from_name = bot.messages[i].from_name;
-
+if (text == "/start") {
+      String welcome = "Welcome to BOT PKM STMKG, " + from_name + ".\n";
+      welcome += "Use the following commands to know about Hidrometeorologi status.\n\n";
+      welcome += "/kualitasudara untuk mendapatkan informasi tentang kualitas udara\n";
+      welcome += "/Hujan untuk mendapatkan informasi tentang hujan\n";
+      bot.sendMessage(chat_id, welcome, "");
+    }
+    
     
   }
 }
@@ -75,9 +92,27 @@ void setup() {
   }
   Serial.println(WiFi.localIP());
   bot.sendMessage(CHAT_ID, "Bot Started", "");
+
+  pinMode(reedSwitchPin, INPUT_PULLUP); // Enable internal pull-up resistor
+  attachInterrupt(digitalPinToInterrupt(reedSwitchPin), reedSwitchISR, FALLING); // Attach ISR to the falling edge of the reed switch signal
+    rtc.begin();
+
 }
 
 void loop() {
+
+DateTime now = rtc.now();
+  unsigned long currentTime = now.unixtime();
+  if (currentTime - lastResetTime24 >= 86400) {
+    // Reset the tipCount to zero
+    tipCount24 = 0;
+    rain24 = 0; 
+    
+    // Update the last reset time
+    lastResetTime24 = currentTime;
+  }
+
+
   String data = nodemcu.readStringUntil('\n');
   DynamicJsonDocument doc(2048);
   DeserializationError error = deserializeJson(doc, data);
@@ -111,6 +146,28 @@ void loop() {
     }
     lastTimeBotRan = millis();
   }
+  String text;
+  if (text == "/kualitasudara") {
+      String pm25 = "kualitas udara :\nPM 2.5 : ";
+        pm25 += int(pm2_5);
+        pm25 += "\nPM 10 : ";
+        pm25 += int(pm10);
+        pm25 += "\nAQIpm2.5 : ";
+        pm25 += int(AQIpm2_5);
+        pm25 += "\nAQIpm10 : ";
+        pm25 += int(AQIpm10);
+
+    bot.sendMessage(CHAT_ID, pm25, "");
+    Serial.print("Mengirim data sensor ke telegram");
+    }
+    
+    if (text == "/Hujan") {
+      String hujan = "informasi hujan; \nHujan ;";
+      hujan += int(rain24);
+    bot.sendMessage(CHAT_ID, hujan, "");
+    Serial.print("Mengirim data sensor ke telegram");
+    }
+    
 if ((WiFi.status() == WL_CONNECTED)) {
       std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
       client->setInsecure();
@@ -128,6 +185,7 @@ if ((WiFi.status() == WL_CONNECTED)) {
       address += "&pm10=" + String(pm10);
       address += "&aqipm2_5=" + String(AQIpm2_5);
       address += "&aqipm10=" + String(AQIpm10);
+      address += "&rain=" + String(rain24);
 
 
        https.begin(*client,address);  //Specify request destination
@@ -141,7 +199,7 @@ if ((WiFi.status() == WL_CONNECTED)) {
           }
           
       }
-       delay(120000);
+      //  delay(120000);
 
       https.end();   //Close connection
   }else{
