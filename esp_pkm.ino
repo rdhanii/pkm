@@ -189,7 +189,7 @@ if ((WiFi.status() == WL_CONNECTED)) {
 
 
        https.begin(*client,address);  //Specify request destination
-      int httpCode = https.GET();//Send the request
+      int httpCode = https.POST();//Send the request
       String payload;  
       if (httpCode > 0) { //Check the returning code    
           payload = https.getString();   //Get the request response payload
